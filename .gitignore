@@ -1,3 +1,6 @@
-*/.DS_STORE
-*/__pychache__/*
-*/__pychache__
+*.DS_STORE
+*/__pycache__/*
+*/__pycache__
+*.pyc
+__pycache__/
+*.egg-info*
