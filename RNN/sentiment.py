@@ -77,8 +77,10 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
             optimizer.step()
 
         # print(loss)
-        acc = accuracy(x0_val, x1_val, y_val, model)
-        print('epoch ' + str(t) + ': training accuracy: '+ str(acc))
+        print('epoch ' + str(t) + ': training accuracy: ' + 
+              str(accuracy(x0, x1, y, model)) + 
+              ' | validation accuracy:  ' + 
+              str(accuracy(x0_val, x1_val, y_val, model)))
 
         if t % 10 == 0:
             torch.save(model, MODEL_SAVE_PATH + str(t) + '.torch')
