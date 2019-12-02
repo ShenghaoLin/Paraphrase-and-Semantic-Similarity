@@ -96,7 +96,7 @@ def padding(x, max_len=10000):
     return x
 
 
-def preprocessing(embedding_path, input_path):
+def preprocessing(embedding_path, input_path, testing=False):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     d, embedding = generate_dict(embedding_path)
     x0 = []
@@ -106,14 +106,19 @@ def preprocessing(embedding_path, input_path):
     trends, _ = readInData(input_path)
 
     for trend in trends:
-        if trend[0] == True:
+        if testing:
             x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
             x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
-            y.append([1, 0])
-        elif trend[0] == False:
-            x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
-            x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
-            y.append([0, 1])
+            y.append([0, 0])
+        else:
+            if trend[0] == True:
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
+                y.append([1, 0])
+            elif trend[0] == False:
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
+                y.append([0, 1])
 
     max_len = 0
     for xx in x0 + x1:
