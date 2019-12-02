@@ -9,13 +9,13 @@ import argparse
 from utils import preprocessing
 
 
-TRANING_DATA = 'traning.pyc'
+TRANING_VALIDATION_DATA = 'traning_validation.pyc'
 TESTING_DATA = 'testing.pyc'
 MODEL_SAVE_PATH = 'tmp/rnn_model'
 
 # Data & embedding configerations
 PRE_TRAINED_EMBEDDING_PATH = 'glove.6B/glove.6B.300d.txt'
-DATA_PATH = 'data/train.data'
+DATA_PATH = 'data'
 
 def accuracy(x0, x1, y, model):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -33,15 +33,16 @@ def accuracy(x0, x1, y, model):
     return good / tot
 
 
-def train(embedding_path, input_path, dropout_rate=0, 
-          batch_size=100, num_epochs=2000, learning_rate=4e-3, pretrained_model=None):
+def train(embedding_path, input_path, validation_path, dropout_rate=0, 
+          batch_size=100, num_epochs=2000, learning_rate=4e-3, pretrained_model=None, starting_t=0):
     try:
-        with open(TRANING_DATA, 'rb') as f:
-            x0, x1, y, embedding = pickle.load(f)
+        with open(TRANING_VALIDATION_DATA, 'rb') as f:
+            x0, x1, y, x0_val, x1_val, y_val, embedding = pickle.load(f)
     except:
         x0, x1, y, embedding = preprocessing(embedding_path, input_path)
-        with open(TRANING_DATA, 'wb') as f:
-            pickle.dump((x0, x1, y, embedding), f)
+        x0_val, x1_val, y_val, embedding = preprocessing(embedding_path, validation_path)
+        with open(TRANING_VALIDATION_DATA, 'wb') as f:
+            pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
     if pretrained_model is None:
         model = RNN_model(embedding.weight.shape[1], 300, 2, num_layers=1)
     else:
@@ -57,7 +58,7 @@ def train(embedding_path, input_path, dropout_rate=0,
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
-    for t in range(num_epochs):
+    for t in range(starting_t, num_epochs):
         permutation = torch.randperm(x0.shape[0])
 
         for i in range(0, x0.shape[0], batch_size):
@@ -76,7 +77,7 @@ def train(embedding_path, input_path, dropout_rate=0,
             optimizer.step()
 
         # print(loss)
-        acc = accuracy(x0, x1, y, model)
+        acc = accuracy(x0_val, x1_val, y_val, model)
         print('epoch ' + str(t) + ': training accuracy: '+ str(acc))
 
         if t % 10 == 0:
@@ -100,6 +101,8 @@ def sentiment_parser():
                         help='If no pre-trained model is given, train the new model with this dropout rate')
     parser.add_argument('-l, --learning_rate', metavar='LR', type=float, default=4e-3, dest='learning_rate',
                         help='If no pre-trained model is given, train the new model with this learning_rate rate')
+    parser.add_argument('-s, --starting_t', metavar='LR', type=int, default=0, dest='starting_t',
+                        help='starting epoch')
     return parser.parse_args()
 
 
@@ -109,11 +112,14 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if args.model_path != '':
         model = torch.load(args.model_path, map_location=device)
-        model = train(args.embedding_path, args.data_path, 
+        model = train(args.embedding_path, os.path.join(args.data_path, 'train.data'), 
+                      os.path.join(args.data_path, 'dev.data'),
                       dropout_rate=args.dropout_rate, 
                       num_epochs=args.num_epochs, learning_rate=args.learning_rate, 
-                      pretrained_model=model) 
+                      pretrained_model=model, starting_t=args.starting_t) 
     else:    
-        model = train(args.embedding_path, args.data_path, 
+        model = train(args.embedding_path, os.path.join(args.data_path, 'train.data'), 
+                      os.path.join(args.data_path, 'dev.data'),
                       dropout_rate=args.dropout_rate, 
-                      num_epochs=args.num_epochs, learning_rate=args.learning_rate) 
+                      num_epochs=args.num_epochs, learning_rate=args.learning_rate,
+                      starting_t=args.starting_t) 
