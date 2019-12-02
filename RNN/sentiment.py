@@ -61,20 +61,20 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
     for t in range(starting_t, num_epochs):
         permutation = torch.randperm(x0.shape[0])
 
-        for i in range(0, x0.shape[0], batch_size):
-            optimizer.zero_grad()
+        #for i in range(0, x0.shape[0], batch_size):
+        optimizer.zero_grad()
 
-            indices = permutation[i:i + batch_size]
-            if len(indices) < batch_size:
-                continue
+        #    indices = permutation[i:i + batch_size]
+        #    if len(indices) < batch_size:
+        #        continue
 
-            batch_x0, batch_x1, batch_y = x0[indices], x0[indices], y[indices]
-            y_pred = model(batch_x0, batch_x1)
+        #    batch_x0, batch_x1, batch_y = x0[indices], x0[indices], y[indices]
+        y_pred = model(x0, x1)
             # print(y_pred.size)
-            loss = criterion(y_pred, batch_y)
+        loss = criterion(y_pred, y)
 
-            loss.backward()
-            optimizer.step()
+        loss.backward()
+        optimizer.step()
 
         # print(loss)
         print('epoch ' + str(t) + ': training accuracy: ' + 

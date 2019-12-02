@@ -6,3 +6,4 @@ __pycache__/
 *.egg-info*
 glove.6B/*
 glove.6B
+tmp/rnn_model*
