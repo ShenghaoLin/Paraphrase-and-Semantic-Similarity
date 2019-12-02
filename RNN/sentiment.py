@@ -44,7 +44,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
         with open(TRANING_VALIDATION_DATA, 'wb') as f:
             pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
     if pretrained_model is None:
-        model = RNN_model(embedding.weight.shape[1], 300, 2, num_layers=1)
+        model = RNN_model(embedding.weight.shape[1], 300, 2)
     else:
         model = pretrained_model
 
