@@ -111,17 +111,17 @@ def preprocessing(embedding_path, input_path, testing=False):
 
     for trend in trends:
         if testing:
-            x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-            x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+            x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
+            x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
             y.append([0, 0])
         else:
             if trend[0] == True:
-                x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-                x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
                 y.append([1, 0])
             elif trend[0] == False:
-                x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-                x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1])])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2])])
                 y.append([0, 1])
 
     max_len = 0
