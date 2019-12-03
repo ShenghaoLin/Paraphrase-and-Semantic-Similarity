@@ -7,7 +7,7 @@ from utils import preprocessing
 TESTING_DATA = 'testing.pyc'
 DATA_PATH = 'data/test.data'
 OUTPUT_PATH = 'output/PIT2015_02_rnn.output'
-PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.6B.200d.txt'
+PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.twitter.27B.200d.txt'
 
 
 def run_model(embedding_path, input_path, output_path, model):

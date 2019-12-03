@@ -14,7 +14,7 @@ TESTING_DATA = 'testing.pyc'
 MODEL_SAVE_PATH = 'tmp/rnn_model'
 
 # Data & embedding configerations
-PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.6B.200d.txt'
+PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.twitter.27B.200d.txt'
 DATA_PATH = 'data'
 
 def accuracy(x0, x1, y, model):
