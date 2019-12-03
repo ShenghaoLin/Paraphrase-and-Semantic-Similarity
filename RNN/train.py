@@ -14,7 +14,7 @@ TESTING_DATA = 'testing.pyc'
 MODEL_SAVE_PATH = 'tmp/rnn_model'
 
 # Data & embedding configerations
-PRE_TRAINED_EMBEDDING_PATH = 'glove.6B/glove.6B.300d.txt'
+PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.6B.200d.txt'
 DATA_PATH = 'data'
 
 def accuracy(x0, x1, y, model):
@@ -45,7 +45,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
         with open(TRANING_VALIDATION_DATA, 'wb') as f:
             pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
     if pretrained_model is None:
-        model = RNN_model(embedding.weight.shape[1], 300, 2, skip_connection=skip_connection)
+        model = RNN_model(embedding.weight.shape[1], 200, 2, skip_connection=skip_connection)
     else:
         model = pretrained_model
 
@@ -106,8 +106,7 @@ def sentiment_parser():
                         help='If no pre-trained model is given, train the new model with this learning_rate rate')
     parser.add_argument('-s, --starting_t', metavar='LR', type=int, default=0, dest='starting_t',
                         help='starting epoch')
-    parser.add_argument('-k', '--skip_connection', metavar='SC', type=bool, default=False, dest='skip_connection',
-                        help='skip_connection')
+    parser.add_argument('--skip_connection', action="store_true", default=False)
     return parser.parse_args()
 
 

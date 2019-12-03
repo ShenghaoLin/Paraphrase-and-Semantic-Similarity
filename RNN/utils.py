@@ -57,7 +57,7 @@ def readInData(filename):
                 
     return data, trends
 
-def generate_dict(embedding_path, d_model=300):
+def generate_dict(embedding_path, d_model=200):
     d = {}
     embedding_list = []
     with open(embedding_path, 'r', encoding='utf-8') as f:

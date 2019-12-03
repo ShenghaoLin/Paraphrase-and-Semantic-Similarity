@@ -44,8 +44,8 @@ class RNN_model(nn.Module):
             tmp, _ = self.rnn_5(x_1)
             x_1 = tmp + x_1
 
-            x_0 = self.linear_0(x_0)
-            x_1 = self.linear_0(x_1)
+            x_0 = self.relu(self.linear_0(x_0))
+            x_1 = self.relu(self.linear_0(x_1))
 
         else:
             x_0, _ = self.rnn(x_0)
