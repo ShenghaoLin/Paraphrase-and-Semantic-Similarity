@@ -57,7 +57,7 @@ def readInData(filename):
                 
     return data, trends
 
-def generate_dict(embedding_path):
+def generate_dict(embedding_path, d_model=300):
     d = {}
     embedding_list = []
     with open(embedding_path, 'r', encoding='utf-8') as f:
@@ -68,14 +68,15 @@ def generate_dict(embedding_path):
                 k = line.split()
                 embedding_dim = len(k[1:])
                 a = [float(w) for w in k[1:]]
-                d[k[0]] = idx
-                idx += 1
-                embedding_list.append(a)
+                if (len(a) == d_model):
+                    d[k[0]] = idx
+                    idx += 1
+                    embedding_list.append(a)
             except:
                 pass
             line = f.readline()
     tmp = []
-    for i in range(len(embedding_list[0])):
+    for i in range(d_model):
         tmp.append(0)
     embedding_list = [tmp] + embedding_list
     embedding = nn.Embedding.from_pretrained(torch.tensor(embedding_list), padding_idx=0)

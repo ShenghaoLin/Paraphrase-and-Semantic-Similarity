@@ -57,7 +57,7 @@ def readInData(filename):
                 
     return data, trends
 
-def generate_dict(embedding_path):
+def generate_dict(embedding_path, d_model=200):
     d = {}
     embedding_list = []
     with open(embedding_path, 'r', encoding='utf-8') as f:
@@ -68,14 +68,15 @@ def generate_dict(embedding_path):
                 k = line.split()
                 embedding_dim = len(k[1:])
                 a = [float(w) for w in k[1:]]
-                d[k[0]] = idx
-                idx += 1
-                embedding_list.append(a)
+                if (len(a) == d_model):
+                    d[k[0]] = idx
+                    idx += 1
+                    embedding_list.append(a)
             except:
                 pass
             line = f.readline()
     tmp = []
-    for i in range(len(embedding_list[0])):
+    for i in range(d_model):
         tmp.append(0)
     embedding_list = [tmp] + embedding_list
     embedding = nn.Embedding.from_pretrained(torch.tensor(embedding_list), padding_idx=0)
@@ -110,17 +111,17 @@ def preprocessing(embedding_path, input_path, testing=False):
 
     for trend in trends:
         if testing:
-            x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-            x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+            x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
+            x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
             y.append([0, 0])
         else:
             if trend[0] == True:
-                x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-                x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
                 y.append([1, 0])
             elif trend[0] == False:
-                x0.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[1])])
-                x1.append([d[w] if w in d and w not in stop_words else 0 for w in word_tokenize(trend[2])])
+                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
+                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
                 y.append([0, 1])
 
     max_len = 0

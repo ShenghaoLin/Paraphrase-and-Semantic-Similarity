@@ -14,7 +14,7 @@ TESTING_DATA = 'testing.pyc'
 MODEL_SAVE_PATH = 'tmp/rnn_model'
 
 # Data & embedding configerations
-PRE_TRAINED_EMBEDDING_PATH = 'glove.6B/glove.6B.300d.txt'
+PRE_TRAINED_EMBEDDING_PATH = 'glove.27B/glove.twitter.27B.200d.txt'
 DATA_PATH = 'data'
 
 def accuracy(x0, x1, y, model):
@@ -34,7 +34,8 @@ def accuracy(x0, x1, y, model):
 
 
 def train(embedding_path, input_path, validation_path, dropout_rate=0, 
-          batch_size=100, num_epochs=2000, learning_rate=4e-3, pretrained_model=None, starting_t=0):
+          batch_size=100, num_epochs=2000, learning_rate=4e-3, pretrained_model=None, 
+          starting_t=0, skip_connection=False):
     try:
         with open(TRANING_VALIDATION_DATA, 'rb') as f:
             x0, x1, y, x0_val, x1_val, y_val, embedding = pickle.load(f)
@@ -44,7 +45,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
         with open(TRANING_VALIDATION_DATA, 'wb') as f:
             pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
     if pretrained_model is None:
-        model = RNN_model(embedding.weight.shape[1], 300, 2)
+        model = RNN_model(embedding.weight.shape[1], 200, 2, skip_connection=skip_connection)
     else:
         model = pretrained_model
 
@@ -105,6 +106,7 @@ def sentiment_parser():
                         help='If no pre-trained model is given, train the new model with this learning_rate rate')
     parser.add_argument('-s, --starting_t', metavar='LR', type=int, default=0, dest='starting_t',
                         help='starting epoch')
+    parser.add_argument('--skip_connection', action="store_true", default=False)
     return parser.parse_args()
 
 
@@ -118,10 +120,12 @@ if __name__ == '__main__':
                       os.path.join(args.data_path, 'dev.data'),
                       dropout_rate=args.dropout_rate, 
                       num_epochs=args.num_epochs, learning_rate=args.learning_rate, 
-                      pretrained_model=model, starting_t=args.starting_t) 
+                      pretrained_model=model, starting_t=args.starting_t, 
+                      skip_connection=args.skip_connection) 
     else:    
         model = train(args.embedding_path, os.path.join(args.data_path, 'train.data'), 
                       os.path.join(args.data_path, 'dev.data'),
                       dropout_rate=args.dropout_rate, 
                       num_epochs=args.num_epochs, learning_rate=args.learning_rate,
-                      starting_t=args.starting_t) 
+                      starting_t=args.starting_t, 
+                      skip_connection=args.skip_connection) 
