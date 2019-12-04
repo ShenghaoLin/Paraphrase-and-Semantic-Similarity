@@ -1,127 +1,82 @@
 import torch
 import torch.nn as nn
-import os
-from RNN_model import RNN_model
-from random import random
+import torch.nn.functional as F
+from torch.autograd import Variable
+import numpy as np
+import copy
+import math
+
+from model import *
+
+import random
 import sys
 import pickle
 import argparse
-from utils import preprocessing
 
+device = torch.device(0 if torch.cuda.is_available() else "cpu")
 
-TRANING_VALIDATION_DATA = 'traning_validation.pyc'
-TESTING_DATA = 'testing.pyc'
-MODEL_SAVE_PATH = 'tmp/rnn_model'
-
-# Data & embedding configerations
-PRE_TRAINED_EMBEDDING_PATH = 'glove.6B/glove.6B.300d.txt'
-DATA_PATH = 'data'
-
-def accuracy(x0, x1, y, model):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    x0 = x0.to(device)
-    x1 = x1.to(device)
-    y = y.to(device)
-    y_pred = model(x0, x1)
-    tot = 0
-    good = 0
-    for i in range(len(y)):
-        tot += 1
-        if (y[i][0] == 1 and y_pred[i][0] > y_pred[i][1]) or (y[i][1] == 1 and y_pred[i][0] < y_pred[i][1]):
-            good += 1
-    return good / tot
-
-
-def train(embedding_path, input_path, validation_path, dropout_rate=0, 
-          batch_size=100, num_epochs=2000, learning_rate=4e-3, pretrained_model=None, starting_t=0):
-    try:
-        with open(TRANING_VALIDATION_DATA, 'rb') as f:
-            x0, x1, y, x0_val, x1_val, y_val, embedding = pickle.load(f)
-    except:
-        x0, x1, y, embedding = preprocessing(embedding_path, input_path)
-        x0_val, x1_val, y_val, embedding = preprocessing(embedding_path, validation_path)
-        with open(TRANING_VALIDATION_DATA, 'wb') as f:
-            pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
-    if pretrained_model is None:
-        model = RNN_model(embedding.weight.shape[1], 300, 2)
-    else:
-        model = pretrained_model
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    x0 = x0.to(device)
-    x1 = x1.to(device)
-    y = y.to(device)
-    # max_a = 0
-    # stopping_sign = 0
-    criterion = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+d_model=50
+DATA_PATH = '../data/train_data_'+str(d_model)+'d.pkl'
+f=open(DATA_PATH, "rb")
+x0=pickle.load(f)
+x1=pickle.load(f)
+Y=pickle.load(f)
+f.close()
+d_len=x0.size()[0]
+s_len=x0.size()[1]
     
-    for t in range(starting_t, num_epochs):
-        permutation = torch.randperm(x0.shape[0])
-
-        #for i in range(0, x0.shape[0], batch_size):
-        optimizer.zero_grad()
-
-        #    indices = permutation[i:i + batch_size]
-        #    if len(indices) < batch_size:
-        #        continue
-
-        #    batch_x0, batch_x1, batch_y = x0[indices], x0[indices], y[indices]
-        y_pred = model(x0, x1)
-            # print(y_pred.size)
-        loss = criterion(y_pred, y)
-
-        loss.backward()
-        optimizer.step()
-
-        # print(loss)
-        print('epoch ' + str(t) + ': training accuracy: ' + 
-              str(accuracy(x0, x1, y, model)) + 
-              ' | validation accuracy:  ' + 
-              str(accuracy(x0_val, x1_val, y_val, model)))
-
-        if t % 10 == 0:
-            torch.save(model, MODEL_SAVE_PATH + str(t) + '.torch')
-    # print("Maximal validation accuracy: " + str(max_a))
-
+def make_model(d_model, max_len, N=6, d_ff=256, h=5, dropout=0.1):
+    "Helper: Construct a model from hyperparameters."
+    c = copy.deepcopy
+    attn = MultiHeadedAttention(h, d_model)
+    ff = PositionwiseFeedForward(d_model, d_ff, dropout)
+    position = PositionalEncoding(d_model, dropout)
+    model = AttentionEnc(
+        Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), N),
+        c(position), d_model, max_len)
+        
+    
+    # This was important from their code. 
+    # Initialize parameters with Glorot / fan_avg.
+    for p in model.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform(p)
     return model
 
+def generate_batch(x0, x1, Y, batch_size, start_i):
+    l=min(batch_size, len(x0)-start_i)
+    x0_batch=[]
+    x1_batch=[]
+    Y_batch=[]
+    for i in range(l):
+        x0_batch.append(x0[start_i+i].numpy())
+        x1_batch.append(x1[start_i+i].numpy())
+        Y_batch.append(Y[start_i+i])
+    x0_batch=torch.Tensor(x0_batch).float().to(device)
+    x1_batch=torch.tensor(x1_batch).float().to(device)
+    Y_batch=torch.tensor(Y_batch).long().to(device)
+    return x0_batch, x1_batch, Y_batch
 
-def sentiment_parser():
-    parser = argparse.ArgumentParser(description='Train/test a review classification model')
-    parser.add_argument('model_path', type=str, default='', nargs='?',
-                        help='Path to the pre-trained model. If not specified, the program will start to train a new model')
-    parser.add_argument('-d, --data_path', metavar='DP', type=str, default=DATA_PATH,
-                        help='Path to the data directory', dest='data_path')
-    parser.add_argument('-e, --embedding_path', metavar='EP', type=str, default=PRE_TRAINED_EMBEDDING_PATH,
-                        help='Path to the word embedding file', dest='embedding_path')
-    parser.add_argument('-n, --num_epochs', metavar='N', type=int, default=500, dest='num_epochs',
-                        help='If no pre-trained model is given, train the new model in these many epochs')
-    parser.add_argument('-r, --dropout_rate', metavar='DR', type=float, default=0, dest='dropout_rate',
-                        help='If no pre-trained model is given, train the new model with this dropout rate')
-    parser.add_argument('-l, --learning_rate', metavar='LR', type=float, default=4e-3, dest='learning_rate',
-                        help='If no pre-trained model is given, train the new model with this learning_rate rate')
-    parser.add_argument('-s, --starting_t', metavar='LR', type=int, default=0, dest='starting_t',
-                        help='starting epoch')
-    return parser.parse_args()
+model = make_model(d_model, s_len).to(device)
+criterion = nn.CrossEntropyLoss()
+learning_rate=1e-3
+reg=1e-7
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg)
+tot_epoch=5000
+batch_size=100
+batch_arrange=[i for i in range(0, d_len, batch_size)]
+# batch_arrange=[0] #overfit
 
-
-if __name__ == '__main__':
-    args = sentiment_parser()
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    if args.model_path != '':
-        model = torch.load(args.model_path, map_location=device)
-        model = train(args.embedding_path, os.path.join(args.data_path, 'train.data'), 
-                      os.path.join(args.data_path, 'dev.data'),
-                      dropout_rate=args.dropout_rate, 
-                      num_epochs=args.num_epochs, learning_rate=args.learning_rate, 
-                      pretrained_model=model, starting_t=args.starting_t) 
-    else:    
-        model = train(args.embedding_path, os.path.join(args.data_path, 'train.data'), 
-                      os.path.join(args.data_path, 'dev.data'),
-                      dropout_rate=args.dropout_rate, 
-                      num_epochs=args.num_epochs, learning_rate=args.learning_rate,
-                      starting_t=args.starting_t) 
+for epoch in range(tot_epoch):
+    random.shuffle(batch_arrange)
+    for batch_s in batch_arrange:
+        optimizer.zero_grad()
+        x0_batch, x1_batch, y_batch = generate_batch(x0, x1, Y, batch_size, batch_s)
+        y_out = model(x0_batch, x1_batch)
+        loss = criterion(y_out, y_batch)
+        loss.backward()
+        optimizer.step()
+    if epoch%100==0:
+        print("epoch ", epoch, ": current loss ", loss, sep="")
+    if epoch%1000==1:
+        torch.save(model.state_dict(), 'models/attention_epoch_' + str(epoch) + '.torch')

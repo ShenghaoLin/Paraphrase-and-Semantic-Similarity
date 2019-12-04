@@ -8,3 +8,5 @@ glove.6B/*
 glove.6B
 tmp/rnn_model*
 embedding/*
+*.pkl
+*.torch
