@@ -24,7 +24,7 @@ def run_model(embedding_path, input_path, output_path, model):
     x0 = x0.to(device)
     x1 = x1.to(device)
     y_pred = model(x0, x1)
-
+    
     with open(output_path, 'w') as f:
         for y in y_pred:
             if y[0] > y[1]:

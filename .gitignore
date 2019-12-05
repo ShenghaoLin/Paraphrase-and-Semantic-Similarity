@@ -10,3 +10,4 @@ tmp/rnn_model*
 embedding/*
 *.pkl
 *.torch
+*.his
