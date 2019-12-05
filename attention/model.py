@@ -13,7 +13,7 @@ class AttentionEnc(nn.Module):
         self.encoder = encoder
         self.embed = embedding
         self.size=d_model*max_len
-        self.linear=nn.Linear(self.size, output_dim)
+        self.linear=nn.Linear(self.size*2, output_dim)
         
     def forward(self, x0, x1):
         x0 = self.embed(x0)
@@ -23,7 +23,7 @@ class AttentionEnc(nn.Module):
         x1 = self.encoder(x1)
         x1 = x1.view(-1, self.size)
         
-        return self.linear(x0-x1)
+        return self.linear(torch.cat((x0, x1), dim=1))
     
 def clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
