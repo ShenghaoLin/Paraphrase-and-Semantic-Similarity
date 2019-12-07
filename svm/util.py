@@ -1,6 +1,6 @@
 import pickle
 
-PRE_TRAINED_EMBEDDING_PATH = '../glove.twitter.27B/glove.twitter.27B.25d.txt'
+PRE_TRAINED_EMBEDDING_PATH = '../glove.twitter.27B/glove.twitter.27B.200d.txt'
 TRAIN_DATA_PATH = '../data/train.data'
 TEST_DATA_PATH = '../data/test.data'
 
@@ -80,19 +80,16 @@ def readInData(filename):
     return data, trends
 
 if __name__ == "__main__":
-    # data_processor = Data_processing(PRE_TRAINED_EMBEDDING_PATH)
-    # vectors, word2idx = None, None
-    # try:
-    #     file_vectors = open("vectors.pkl", "rb")
-    #     file_word2idx = open("word2idx.pkl", "rb")
-    #     vectors = pickle.load(file_vectors)
-    #     word2idx = pickle.load(file_word2idx)
-    # except:
-    #     vectors, word2idx = data_processor.create_embedding()
-    #     file_vectors = open("vectors.pkl", "wb+")
-    #     file_word2idx = open("word2idx.pkl", "wb+")
-    #     pickle.dump(vectors, file_vectors)
-    #     pickle.dump(word2idx, file_word2idx)
-    data, trends = readInData(TRAIN_DATA_PATH)
-    print(data[0:20])
-    # print(trends)
+    data_processor = Data_processing(PRE_TRAINED_EMBEDDING_PATH)
+    vectors, word2idx = None, None
+    try:
+        file_vectors = open("vectors.pkl", "rb")
+        file_word2idx = open("word2idx.pkl", "rb")
+        vectors = pickle.load(file_vectors)
+        word2idx = pickle.load(file_word2idx)
+    except:
+        vectors, word2idx = data_processor.create_embedding()
+        file_vectors = open("vectors.pkl", "wb+")
+        file_word2idx = open("word2idx.pkl", "wb+")
+        pickle.dump(vectors, file_vectors)
+        pickle.dump(word2idx, file_word2idx)

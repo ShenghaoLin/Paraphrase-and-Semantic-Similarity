@@ -6,8 +6,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 
-USE_EMBEDDING = True
+
+USE_EMBEDDING = False
 
 def get_train_X_Y(filename, vectors, word2idx, C, V):
     data, _ = readInData(filename)
@@ -89,27 +93,22 @@ def eval(result, truth):
     f1 = 2 * precision * recall / (precision + recall)
     return accuracy, precision, recall, f1
 
-def train(vectors, word2idx, C, V):
-    train_X, train_Y, scaler = get_train_X_Y(TRAIN_DATA_PATH, vectors, word2idx, C, V)
-    clf = AdaBoostClassifier(n_estimators=256)
-    # clf = LinearSVC(max_iter=10000, C = 2.0)
-    # clf = SVC(C = 2.0, kernel='rbf')
+def train(train_X, train_Y, clf, C, V):
     clf.fit(train_X, train_Y)
-    return clf, scaler, eval(clf.predict(train_X), train_Y)
-
-def test(vectors, word2idx, C, V):
-    clf, scaler, train_eval = train(vectors, word2idx, C, V)
+    train_eval = eval(clf.predict(train_X), train_Y)
     print("training accuracy is: ", round(train_eval[0], 5))
     print("training f1 is: ", round(train_eval[-1], 5))
-    test_X, test_Y = get_test_X_Y(TEST_DATA_PATH, scaler, vectors, word2idx, C, V)
+    return clf
+
+def test(test_X, test_Y, clf, C, V):
     pred_Y = clf.predict(test_X)
     return pred_Y, eval(pred_Y, test_Y)
 
-def main():
+def main(use_embedding=USE_EMBEDDING):
     data_processor = Data_processing(PRE_TRAINED_EMBEDDING_PATH)
     vectors, word2idx = None, None
 
-    if USE_EMBEDDING:
+    if use_embedding:
         try:
             file_vectors = open("vectors.pkl", "rb")
             file_word2idx = open("word2idx.pkl", "rb")
@@ -121,27 +120,83 @@ def main():
             file_word2idx = open("word2idx.pkl", "wb+")
             pickle.dump(vectors, file_vectors)
             pickle.dump(word2idx, file_word2idx)
+            file_vectors.close()
+            file_word2idx.close()
             file_vectors = open("vectors.pkl", "rb")
             file_word2idx = open("word2idx.pkl", "rb")
             vectors = pickle.load(file_vectors)
             word2idx = pickle.load(file_word2idx)
-        print("file reading completed")
+            file_vectors.close()
+            file_word2idx.close()
+        # print("file reading completed")
 
-    Cs = [2]
-    Vs = [1]
-    for C in Cs:
-        for V in Vs:
-            pred_Y, eval_result = test(vectors, word2idx, C, V)
-            print("C = " + str(C), "V = " + str(V))
-            print(eval_result)
-            print("================================")
-            output = open("../output/PIT2015_03_traditional.output", "w+")
-            for Y in pred_Y:
-                if Y:
-                    output.write('true\t')
-                else:
-                    output.write('false\t')
-                output.write('0.0000\n')
+    pipes = {'ada': {}, 'LinearSVC': {}, 'rbf': {}}
+    # AdaBoostClassifier
+    pipes['ada']['pipeline'] = Pipeline([
+        ("clf", AdaBoostClassifier())
+    ])
+
+    pipes['ada']['param_grid'] = {
+        'clf__n_estimators':[56, 128, 256]
+    }
+    # LinearSVC
+    pipes['LinearSVC']['pipeline'] = Pipeline([
+        ("clf", LinearSVC())
+    ])
+
+    pipes['LinearSVC']['param_grid'] = {
+        'clf__dual':[False],
+        'clf__C':[0.2, 0.5, 1.0, 2.0],
+        'clf__penalty':["l2", "l1"],
+        'clf__max_iter':[10000]
+    }
+    # rbf
+    pipes['rbf']['pipeline'] = Pipeline([
+        ("clf", SVC())
+    ])
+
+    pipes['rbf']['param_grid'] = {
+        'clf__kernel':["rbf"],
+        'clf__C':[0.5, 1.0, 2.0],
+    }
+
+    Cs = [1, 2]
+    Vs = [1, 2]
+    for clf_name in pipes:
+        for C in Cs:
+            for V in Vs:
+                print("================" + clf_name + "_C" + str(C) + "V" + str(V) + "================")
+                train_X, train_Y, scaler = get_train_X_Y(TRAIN_DATA_PATH, vectors, word2idx, C, V)
+                test_X, test_Y = get_test_X_Y(TEST_DATA_PATH, scaler, vectors, word2idx, C, V)
+                pipeline = pipes[clf_name]['pipeline']
+                param_grid = pipes[clf_name]['param_grid']
+
+                grid = GridSearchCV(pipeline, cv=5, param_grid=param_grid, scoring="f1", return_train_score=True)
+                grid.fit(train_X, train_Y)
+                print("------------training------------")
+                print("Best params: %s" % (grid.best_params_))
+                # print(grid.cv_results_)
+                print("Validation score:", grid.best_score_)
+                clf = grid.best_estimator_
+                train_result_Y = clf.predict(train_X)
+                train_eval = eval(train_result_Y, train_Y)
+                print("training result:", train_eval)
+                print("------------testing------------")
+                pred_Y, eval_result = test(test_X, test_Y, clf, C, V)
+                print("testing result:", eval_result)
+                print("test score:", eval_result[-1])
+                print()
+
+                output = open("../output/PIT2015_03_" + clf_name + "_C" + str(C) + "V" + str(V) + ".output", "w+")
+                for Y in pred_Y:
+                    if Y:
+                        output.write('true\t')
+                    else:
+                        output.write('false\t')
+                    output.write('0.0000\n')
 
 if __name__ == "__main__":
-    main()
+    print("No embedding")
+    main(False)
+    print("\n*****************Use embedding*****************")
+    main(True)
