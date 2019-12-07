@@ -6,6 +6,7 @@ __pycache__/
 *.egg-info*
 glove.6B/*
 glove.6B
+glove.*
 tmp/rnn_model*
 embedding/*
 *.pkl
