@@ -102,7 +102,8 @@ def test(vectors, word2idx, C, V):
     print("training accuracy is: ", round(train_eval[0], 5))
     print("training f1 is: ", round(train_eval[-1], 5))
     test_X, test_Y = get_test_X_Y(TEST_DATA_PATH, scaler, vectors, word2idx, C, V)
-    return eval(clf.predict(test_X), test_Y)
+    pred_Y = clf.predict(test_X)
+    return pred_Y, eval(pred_Y, test_Y)
 
 def main():
     data_processor = Data_processing(PRE_TRAINED_EMBEDDING_PATH)
@@ -126,13 +127,21 @@ def main():
             word2idx = pickle.load(file_word2idx)
         print("file reading completed")
 
-    Cs = [1, 2]
-    Vs = [1, 2]
+    Cs = [2]
+    Vs = [1]
     for C in Cs:
         for V in Vs:
+            pred_Y, eval_result = test(vectors, word2idx, C, V)
             print("C = " + str(C), "V = " + str(V))
-            print(test(vectors, word2idx, C, V))
+            print(eval_result)
             print("================================")
+            output = open("../output/PIT2015_03_traditional.output", "w+")
+            for Y in pred_Y:
+                if Y:
+                    output.write('true\t')
+                else:
+                    output.write('false\t')
+                output.write('0.0000\n')
 
 if __name__ == "__main__":
     main()
