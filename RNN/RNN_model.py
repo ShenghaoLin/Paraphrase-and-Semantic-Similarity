@@ -18,8 +18,8 @@ class RNN_model(nn.Module):
             self.linear_0 = nn.Linear(intput_size, hidden_size, class_num)
         self.linear_1 = nn.Linear(hidden_size * 2, hidden_size * 2)
         self.linear_2 = nn.Linear(hidden_size * 2, class_num)
-        nn.init.xavier_uniform_(self.linear1.weight)
-        nn.init.xavier_uniform_(self.linear2.weight)
+        nn.init.xavier_uniform_(self.linear_1.weight)
+        nn.init.xavier_uniform_(self.linear_2.weight)
 
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
