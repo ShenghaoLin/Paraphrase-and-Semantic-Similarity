@@ -16,8 +16,11 @@ class RNN_model(nn.Module):
             self.rnn_4 = nn.GRU(intput_size, intput_size, num_layers=1, dropout=dropout, batch_first=True)
             self.rnn_5 = nn.GRU(intput_size, intput_size, num_layers=1, dropout=dropout, batch_first=True)
             self.linear_0 = nn.Linear(intput_size, hidden_size, class_num)
-        self.linear = nn.Linear(hidden_size * 2, class_num)
-        nn.init.xavier_uniform_(self.linear.weight)
+        self.linear_1 = nn.Linear(hidden_size * 2, hidden_size * 2)
+        self.linear_2 = nn.Linear(hidden_size * 2, class_num)
+        nn.init.xavier_uniform_(self.linear_1.weight)
+        nn.init.xavier_uniform_(self.linear_2.weight)
+
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=1)
 
@@ -50,11 +53,13 @@ class RNN_model(nn.Module):
         else:
             x_0, _ = self.rnn(x_0)
             x_1, _ = self.rnn(x_1)
-            
-        x = torch.cat((x_0[:, -1, :], x_1[:, -1, :]), dim=1)
-        # print(x)
 
-        x = self.linear(x)
-        x = self.softmax(x)
-        # print(x.size())
+        x_mul = torch.mul(x_0[:, -1, :], x_1[:, -1, :])
+        x_add = torch.abs(torch.add(x_0[:, -1, :], -x_1[:, -1, :]))
+            
+        x = torch.cat((x_mul, x_add), dim=1)
+
+        x = self.relu(self.linear_1(x))
+        x = self.softmax(self.linear_2(x))
+
         return x

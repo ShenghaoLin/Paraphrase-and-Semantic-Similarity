@@ -54,7 +54,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
     x0 = x0.to(device)
     x1 = x1.to(device)
     y = y.to(device)
-    # max_a = 0
+    max_a = 0
     # stopping_sign = 0
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -76,15 +76,18 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
 
         loss.backward()
         optimizer.step()
-
+        a = accuracy(x0_val, x1_val, y_val, model)
         # print(loss)
         print('epoch ' + str(t) + ': training accuracy: ' + 
               str(accuracy(x0, x1, y, model)) + 
               ' | validation accuracy:  ' + 
-              str(accuracy(x0_val, x1_val, y_val, model)))
-
-        if t % 10 == 0:
+              str(a))
+        
+        if t % 50 == 0:
             torch.save(model, MODEL_SAVE_PATH + str(t) + '.torch')
+        if a > max_a:
+            max_a = a
+            torch.save(model, 'tmp/new_RNN.torch')
     # print("Maximal validation accuracy: " + str(max_a))
 
     return model
