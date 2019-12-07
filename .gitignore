@@ -1,0 +1,17 @@
+*.DS_STORE
+*/__pycache__/*
+*/__pycache__
+*.pyc
+__pycache__/
+*.egg-info*
+glove.6B/*
+glove.6B
+glove.27B
+glove.27B/*
+glove.twitter
+glove.twitter*
+tmp/rnn_model*
+embedding/*
+*.pkl
+*.torch
+*.his
