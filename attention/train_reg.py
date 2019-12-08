@@ -6,7 +6,7 @@ import numpy as np
 import copy
 import math
 
-from model import *
+from model_reg import *
 
 import random
 import sys
@@ -15,13 +15,14 @@ import argparse
 
 device = torch.device(0 if torch.cuda.is_available() else "cpu")
 
-d_model=50
+d_model=200
 TRAIN_DATA_PATH = '../data/train_data_'+str(d_model)+'d.pkl'
 f=open(TRAIN_DATA_PATH, "rb")
 train_x0=pickle.load(f)
 train_x1=pickle.load(f)
 train_Y=pickle.load(f)
 f.close()
+train_Y = train_Y.float()/5
 
 VAL_DATA_PATH = '../data/dev_data_'+str(d_model)+'d.pkl'
 f=open(VAL_DATA_PATH, "rb")
@@ -29,6 +30,7 @@ val_x0=pickle.load(f)
 val_x1=pickle.load(f)
 val_Y=pickle.load(f)
 f.close()
+val_Y = val_Y.float()/5
 
 d_len=train_x0.size()[0]
 s_len=train_x0.size()[1]
@@ -63,39 +65,50 @@ def generate_batch(x0, x1, Y, batch_size, start_i):
     for i in range(l):
         x0_batch.append(x0[start_i+i].numpy())
         x1_batch.append(x1[start_i+i].numpy())
-        Y_batch.append(Y[start_i+i])
+        Y_batch.append([Y[start_i+i]])
     x0_batch=torch.Tensor(x0_batch).float().to(device)
     x1_batch=torch.tensor(x1_batch).float().to(device)
-    Y_batch=torch.tensor(Y_batch).long().to(device)
+    Y_batch=torch.tensor(Y_batch).float().to(device)
     return x0_batch, x1_batch, Y_batch
 
-def compute_acc(val_x0, val_x1, val_Y, model):
-    y_out = model(val_x0, val_x1)
-    y_out = F.log_softmax(y_out, dim=1)
-    y_out = torch.argmax(y_out, dim=1)
+def compute_acc(val_x0, val_x1, val_Y, model, reg=False):
+    val_b=500
     cor=0
-    for i in range(len(y_out)):
-        if y_out[i]==val_Y[i]:
-            cor+=1
-    print("current accuracy is :", cor/len(y_out))
-    return cor/len(y_out)
+    for i in range(0, len(val_Y), val_b):
+        val_x0_batch, val_x1_batch, val_Y_batch=generate_batch(val_x0, val_x1, val_Y, val_b, i)
+        y_out = model(val_x0_batch, val_x1_batch)
+        if not reg:
+            y_out = F.log_softmax(y_out, dim=1)
+            y_out = torch.argmax(y_out, dim=1)
+        for i in range(len(y_out)):
+            if reg:
+                if y_out[i]<0.6 and val_Y_batch[i]<0.6:
+                    cor+=1;
+                elif y_out[i]>=0.6 and val_Y_batch[i]>=0.6:
+                    cor+=1;
+            else:
+                if y_out[i]<3 and val_Y_batch[i]<3:
+                    cor+=1;
+                elif y_out[i]>=3 and val_Y_batch[i]>=3:
+                    cor+=1;
+                
+    print("current accuracy is :", cor/len(val_Y))
+    return cor/len(val_Y)
 
 model = make_model(d_model, s_len).to(device)
-criterion = nn.CrossEntropyLoss()
-learning_rate=1e-3
+criterion = nn.MSELoss()
+learning_rate=5e-4
 reg=1e-7
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg)
-tot_epoch=200
-batch_size=500
+tot_epoch=100
+batch_size=100
 # batch_arrange=[0] #overfit
 batch_arrange = [i for i in range(0, d_len, batch_size)]
 loss_history=[]
 val_acc_history=[]
 
 torch.cuda.empty_cache()
-val_x0 = val_x0.to(device)
-val_x1 = val_x1.to(device)
-val_Y = val_Y.long().to(device)
+max_acc=0.0
 
 for epoch in range(tot_epoch):
     random.shuffle(batch_arrange)
@@ -108,11 +121,15 @@ for epoch in range(tot_epoch):
         optimizer.step()
         loss_history.append(loss)
     print("epoch ", epoch, ": current loss ", loss, sep="")
-    val_acc_history.append(compute_acc(val_x0, val_x1, val_Y, model))
-    if epoch%20==1:
-        torch.save(model.state_dict(), 'models/attention_' + str(d_model) +'d_epoch_' + str(epoch) + '.torch')
+    cur_acc=compute_acc(val_x0, val_x1, val_Y, model, reg=True)
+    val_acc_history.append(cur_acc)
+    if cur_acc>max_acc:
+        max_acc=cur_acc
+        torch.save(model.state_dict(), 'models/reg_attention_' + str(d_model) +'d_epoch_' + str(epoch) + '.torch')
+    elif epoch%20==0:
+        torch.save(model.state_dict(), 'models/reg_attention_' + str(d_model) +'d_epoch_' + str(epoch) + '.torch')        
 
-f=open(str(d_model)+'d.his', 'wb')
+f=open(str(d_model)+'d_reg.his', 'wb')
 pickle.dump(loss_history, f)
 pickle.dump(val_acc_history, f)
 f.close()

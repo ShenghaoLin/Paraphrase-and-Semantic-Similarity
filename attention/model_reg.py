@@ -8,12 +8,13 @@ import math
 
 class AttentionEnc(nn.Module):
 
-    def __init__(self, encoder, embedding, d_model, max_len, output_dim=2):
+    def __init__(self, encoder, embedding, d_model, max_len, hidden_dim=512, output_dim=1):
         super(AttentionEnc, self).__init__()
         self.encoder = encoder
         self.embed = embedding
         self.size=d_model*max_len
-        self.linear=nn.Linear(self.size*2, output_dim)
+        self.l1=nn.Linear(self.size*2, hidden_dim)
+        self.l2=nn.Linear(hidden_dim, output_dim)
         
     def forward(self, x0, x1):
         x0 = self.embed(x0)
@@ -23,7 +24,9 @@ class AttentionEnc(nn.Module):
         x1 = self.encoder(x1)
         x1 = x1.view(-1, self.size)
         
-        return self.linear(torch.cat((x0, x1), dim=1))
+        out = torch.cat((x0, x1), dim=1)
+        out = F.relu(self.l1(out))
+        return self.l2(out)
     
 def clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
