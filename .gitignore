@@ -6,8 +6,13 @@ __pycache__/
 *.egg-info*
 glove.6B/*
 glove.6B
+glove.27B
+glove.27B/*
+glove.twitter
+glove.twitter*
 tmp/rnn_model*
 embedding/*
+pkl*
 *.pkl
 *.torch
 *.his
