@@ -12,6 +12,7 @@ glove.twitter
 glove.twitter*
 tmp/rnn_model*
 embedding/*
+pkl*
 *.pkl
 *.torch
 *.his
