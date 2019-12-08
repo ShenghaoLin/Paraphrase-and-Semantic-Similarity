@@ -27,7 +27,7 @@ def run_model(embedding_path, input_path, output_path, model):
     
     with open(output_path, 'w') as f:
         for y in y_pred:
-            if y[0] > y[1]:
+            if y[0] > 0.5:
                 f.write('true\t')
             else:
                 f.write('false\t')

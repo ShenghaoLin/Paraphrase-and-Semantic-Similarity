@@ -28,7 +28,7 @@ def accuracy(x0, x1, y, model):
     good = 0
     for i in range(len(y)):
         tot += 1
-        if (y[i][0] == 1 and y_pred[i][0] > y_pred[i][1]) or (y[i][1] == 1 and y_pred[i][0] < y_pred[i][1]):
+        if (y[i][0] > 0.5 and y_pred[i][0] > 0.5) or (y[i][0] < 0.5 and y_pred[i][0] < 0.5):
             good += 1
     return good / tot
 

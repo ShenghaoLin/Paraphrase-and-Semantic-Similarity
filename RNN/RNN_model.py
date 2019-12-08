@@ -60,6 +60,6 @@ class RNN_model(nn.Module):
         x = torch.cat((x_mul, x_add), dim=1)
 
         x = self.relu(self.linear_1(x))
-        x = self.softmax(self.linear_2(x))
+        x = torch.nn.functional.sigmoid(self.linear_2(x))
 
         return x

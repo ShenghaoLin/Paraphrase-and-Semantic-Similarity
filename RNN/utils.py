@@ -36,24 +36,11 @@ def readInData(filename):
 
         # ignoring the training/test data that has middle label 
         if judge[0] == '(':  # labelled by Amazon Mechanical Turk in format like "(2,3)"
-            nYes = eval(judge)[0]            
-            if nYes >= 3:
-                amt_label = True
-                data.append((amt_label, origsent, candsent, trendid))
-            elif nYes <= 1:
-                amt_label = False
-                data.append((amt_label, origsent, candsent, trendid))   
+            nYes = eval(judge)[0]  
+                data.append((nYes/5.0, origsent, candsent, trendid))   
         elif judge[0].isdigit():   # labelled by expert in format like "2"
             nYes = int(judge[0])
-            if nYes >= 4:
-                expert_label = True
-                data.append((expert_label, origsent, candsent, trendid))
-            elif nYes <= 2:
-                expert_label = False
-                data.append((expert_label, origsent, candsent, trendid))     
-            else:
-                expert_label = None
-                data.append((expert_label, origsent, candsent, trendid))        
+                data.append((nYes/5.0, origsent, candsent, trendid))
                 
     return data, trends
 
@@ -115,14 +102,9 @@ def preprocessing(embedding_path, input_path, testing=False):
             x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
             y.append([0, 0])
         else:
-            if trend[0] == True:
-                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
-                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
-                y.append([1, 0])
-            elif trend[0] == False:
-                x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
-                x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
-                y.append([0, 1])
+            x0.append([d[w] if w in d else 0 for w in word_tokenize(trend[1].lower())])
+            x1.append([d[w] if w in d else 0 for w in word_tokenize(trend[2].lower())])
+            y.append(trend[0])
 
     max_len = 0
     for xx in x0 + x1:
