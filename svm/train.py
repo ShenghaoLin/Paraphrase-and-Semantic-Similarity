@@ -10,7 +10,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 
-
 USE_EMBEDDING = False
 
 def get_train_X_Y(filename, vectors, word2idx, C, V):
@@ -110,20 +109,20 @@ def main(use_embedding=USE_EMBEDDING):
 
     if use_embedding:
         try:
-            file_vectors = open("vectors.pkl", "rb")
-            file_word2idx = open("word2idx.pkl", "rb")
+            file_vectors = open(PKL_PATH + "vectors.pkl", "rb")
+            file_word2idx = open(PKL_PATH + "word2idx.pkl", "rb")
             vectors = pickle.load(file_vectors)
             word2idx = pickle.load(file_word2idx)
         except:
             vectors, word2idx = data_processor.create_embedding()
-            file_vectors = open("vectors.pkl", "wb+")
-            file_word2idx = open("word2idx.pkl", "wb+")
+            file_vectors = open(PKL_PATH + "vectors.pkl", "wb+")
+            file_word2idx = open(PKL_PATH + "word2idx.pkl", "wb+")
             pickle.dump(vectors, file_vectors)
             pickle.dump(word2idx, file_word2idx)
             file_vectors.close()
             file_word2idx.close()
-            file_vectors = open("vectors.pkl", "rb")
-            file_word2idx = open("word2idx.pkl", "rb")
+            file_vectors = open(PKL_PATH + "vectors.pkl", "rb")
+            file_word2idx = open(PKL_PATH + "word2idx.pkl", "rb")
             vectors = pickle.load(file_vectors)
             word2idx = pickle.load(file_word2idx)
             file_vectors.close()
@@ -158,6 +157,7 @@ def main(use_embedding=USE_EMBEDDING):
     pipes['rbf']['param_grid'] = {
         'clf__kernel':["rbf"],
         'clf__C':[0.5, 1.0, 2.0],
+        'clf__gamma':['auto']
     }
 
     Cs = [1, 2]
@@ -187,7 +187,7 @@ def main(use_embedding=USE_EMBEDDING):
                 print("test score:", eval_result[-1])
                 print()
 
-                output = open("../output/PIT2015_03_" + clf_name + "_C" + str(C) + "V" + str(V) + ".output", "w+")
+                output = open("../output/trainditional_methods_with_embedding_25d/PIT2015_03_" + clf_name + "_C" + str(C) + "V" + str(V) + ".output", "w+")
                 for Y in pred_Y:
                     if Y:
                         output.write('true\t')
@@ -196,7 +196,4 @@ def main(use_embedding=USE_EMBEDDING):
                     output.write('0.0000\n')
 
 if __name__ == "__main__":
-    print("No embedding")
-    main(False)
-    print("\n*****************Use embedding*****************")
     main(True)
