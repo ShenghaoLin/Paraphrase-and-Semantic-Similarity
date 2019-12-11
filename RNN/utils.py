@@ -85,7 +85,7 @@ def padding(x, max_len=10000):
     for i in range(len(x)):
         xx = x[i]
         kk = len(xx)
-        x[i] = ([0] * (max_len - kk)) + xx
+        x[i] = ([torch.zeros([768], dtype=torch.float)] * (max_len - kk)) + xx
     return x
 
 
@@ -115,12 +115,48 @@ def preprocessing(embedding_path, input_path, testing=False):
 
         segments_ids_1 = [0] * len(s1_indices)
         segments_ids_2 = [1] * len(s2_indices)
+        encoded_layers1, _ = embedding(s1_indices, segments_ids_1)
+        encoded_layers2, _ = embedding(s1_indices, segments_ids_2)
 
-        x0.append(s1_indices)
-        x1.append(s2_indices)
+        embedding_output1 = torch.squeeze(torch.stack(encoded_layers1, dim=0), dim=1)
+        embedding_output1.permute(1,0,2)
+        embedding_output2 = torch.squeeze(torch.stack(encoded_layers2, dim=0), dim=1)
+        embedding_output2.permute(1,0,2)
 
-        xx0.append(segments_ids_1)
-        xx1.append(segments_ids_2)
+        # Stores the token vectors, with shape [22 x 768]
+        token_vecs_sum1 = []
+
+        # `token_embeddings` is a [22 x 12 x 768] tensor.
+
+        # For each token in the sentence...
+        for token in embedding_output1:
+
+            # `token` is a [12 x 768] tensor
+
+            # Sum the vectors from the last four layers.
+            sum_vec = torch.sum(token[-4:], dim=0)
+            
+            # Use `sum_vec` to represent `token`.
+            token_vecs_sum1.append(sum_vec)
+
+        # Stores the token vectors, with shape [22 x 768]
+        token_vecs_sum2 = []
+
+        # `token_embeddings` is a [22 x 12 x 768] tensor.
+
+        # For each token in the sentence...
+        for token in embedding_output2:
+
+            # `token` is a [12 x 768] tensor
+
+            # Sum the vectors from the last four layers.
+            sum_vec = torch.sum(token[-4:], dim=0)
+            
+            # Use `sum_vec` to represent `token`.
+            token_vecs_sum2.append(sum_vec)
+
+        x0.append(token_vecs_sum1)
+        x1.append(token_vecs_sum2)
 
         if testing:
             y.append([0, 0])
@@ -131,8 +167,8 @@ def preprocessing(embedding_path, input_path, testing=False):
     for xx in x0 + x1:
         if max_len < len(xx):
             max_len = len(xx)
-    x0 = embedding.to(device)(torch.tensor(padding(x0, max_len=max_len)), torch.tensor(padding(xx0, max_len=max_len)).to(device))    
-    x1 = embedding.to(device)(torch.tensor(padding(x1, max_len=max_len)), torch.tensor(padding(xx1, max_len=max_len)).to(device))    
+    x0 = torch.tensor(padding(x0, max_len=max_len)).to(device)
+    x1 = torch.tensor(padding(x1, max_len=max_len)).to(device)
 
     return x0, x1, torch.tensor(y, dtype=torch.float), embedding
 
