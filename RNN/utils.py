@@ -85,7 +85,7 @@ def padding(x, max_len=10000):
     for i in range(len(x)):
         xx = x[i]
         kk = len(xx)
-        x[i] = ([torch.zeros([768], dtype=torch.float)] * (max_len - kk)) + xx
+        x[i] = torch.stack(([torch.zeros([768], dtype=torch.float)] * (max_len - kk)) + xx)
     return x
 
 
@@ -115,8 +115,9 @@ def preprocessing(embedding_path, input_path, testing=False):
 
         segments_ids_1 = [0] * len(s1_indices)
         segments_ids_2 = [1] * len(s2_indices)
-        encoded_layers1, _ = embedding(s1_indices, segments_ids_1)
-        encoded_layers2, _ = embedding(s1_indices, segments_ids_2)
+        with torch.no_grad():
+            encoded_layers1, _ = embedding(torch.tensor([s1_indices], dtype=torch.long), torch.tensor([segments_ids_1], dtype=torch.long))
+            encoded_layers2, _ = embedding(torch.tensor([s2_indices], dtype=torch.long), torch.tensor([segments_ids_2], dtype=torch.long))
 
         embedding_output1 = torch.squeeze(torch.stack(encoded_layers1, dim=0), dim=1)
         embedding_output1.permute(1,0,2)
@@ -159,18 +160,19 @@ def preprocessing(embedding_path, input_path, testing=False):
         x1.append(token_vecs_sum2)
 
         if testing:
-            y.append([0, 0])
+            y.append([0.0])
         else:
-            y.append(trend[0])
+            y.append([trend[0]])
 
     max_len = 0
     for xx in x0 + x1:
         if max_len < len(xx):
             max_len = len(xx)
-    x0 = torch.tensor(padding(x0, max_len=max_len)).to(device)
-    x1 = torch.tensor(padding(x1, max_len=max_len)).to(device)
-
-    return x0, x1, torch.tensor(y, dtype=torch.float), embedding
+    x0 = padding(x0, max_len=max_len)
+    x1 = padding(x1, max_len=max_len)
+    x0 = torch.stack(x0)
+    x1 = torch.stack(x1)
+    return x0, x1, torch.tensor(y, dtype=torch.float)
 
 
 def wordfreq(input_path):

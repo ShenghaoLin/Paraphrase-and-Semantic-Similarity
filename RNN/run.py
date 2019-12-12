@@ -15,7 +15,7 @@ def run_model(embedding_path, input_path, output_path, model):
         with open(TESTING_DATA, 'rb') as f:
             x0, x1 = pickle.load(f)
     except:
-        x0, x1, _, _ = preprocessing(embedding_path, input_path, testing=True)
+        x0, x1, _ = preprocessing(embedding_path, input_path, testing=True)
         with open(TESTING_DATA, 'wb') as f:
             pickle.dump((x0, x1), f)
 
