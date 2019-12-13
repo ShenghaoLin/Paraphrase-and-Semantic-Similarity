@@ -12,7 +12,7 @@ from sklearn.model_selection import RandomizedSearchCV
 
 USE_EMBEDDING = False
 
-def get_train_X_Y(filename, vectors, word2idx, C, V):
+def get_train_X_Y(filename, vectors=None, word2idx=None, C=2, V=1):
     data, _ = readInData(filename)
     X = []
     Y = []
@@ -33,7 +33,7 @@ def get_train_X_Y(filename, vectors, word2idx, C, V):
     Y = np.asarray(Y)
     return X, Y, scaler
 
-def get_test_X_Y(filename, scaler, vectors, word2idx, C, V):
+def get_test_X_Y(filename, scaler, vectors=None, word2idx=None, C=2, V=1):
     data, _ = readInData(filename)
     X = []
     Y = []
@@ -136,7 +136,7 @@ def main(use_embedding=USE_EMBEDDING):
     ])
 
     pipes['ada']['param_grid'] = {
-        'clf__n_estimators':[56, 128, 256]
+        'clf__n_estimators':[256]
     }
     # LinearSVC
     pipes['LinearSVC']['pipeline'] = Pipeline([
@@ -160,9 +160,9 @@ def main(use_embedding=USE_EMBEDDING):
         'clf__gamma':['auto']
     }
 
-    Cs = [1, 2]
-    Vs = [1, 2]
-    for clf_name in pipes:
+    Cs = [2]
+    Vs = [1]
+    for clf_name in ['ada']:
         for C in Cs:
             for V in Vs:
                 print("================" + clf_name + "_C" + str(C) + "V" + str(V) + "================")
