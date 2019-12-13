@@ -40,10 +40,10 @@ def readInData(filename):
         # ignoring the training/test data that has middle label 
         if judge[0] == '(':  # labelled by Amazon Mechanical Turk in format like "(2,3)"
             nYes = eval(judge)[0]  
-            data.append((nYes/5.0, origsent, candsent, trendid))   
+            data.append((nYes, origsent, candsent, trendid))   
         elif judge[0].isdigit():   # labelled by expert in format like "2"
             nYes = int(judge[0])
-            data.append((nYes/5.0, origsent, candsent, trendid))
+            data.append((nYes, origsent, candsent, trendid))
                 
     return data, trends
 
@@ -113,7 +113,7 @@ def preprocessing(embedding_path, input_path, testing=False):
         s2 = '[CLS] ' + trend[2] + ' [SEP]'
         s2_indices = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(s2))
 
-        segments_ids_1 = [0] * len(s1_indices)
+        segments_ids_1 = [1] * len(s1_indices)
         segments_ids_2 = [1] * len(s2_indices)
         with torch.no_grad():
             encoded_layers1, _ = embedding(torch.tensor([s1_indices], dtype=torch.long), torch.tensor([segments_ids_1], dtype=torch.long))
@@ -160,9 +160,9 @@ def preprocessing(embedding_path, input_path, testing=False):
         x1.append(token_vecs_sum2)
 
         if testing:
-            y.append([0.0])
+            y.append(0)
         else:
-            y.append([trend[0]])
+            y.append(trend[0])
 
     max_len = 0
     for xx in x0 + x1:
@@ -172,7 +172,7 @@ def preprocessing(embedding_path, input_path, testing=False):
     x1 = padding(x1, max_len=max_len)
     x0 = torch.stack(x0)
     x1 = torch.stack(x1)
-    return x0, x1, torch.tensor(y, dtype=torch.float)
+    return x0, x1, torch.tensor(y)
 
 
 def wordfreq(input_path):

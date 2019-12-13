@@ -27,11 +27,17 @@ def run_model(embedding_path, input_path, output_path, model):
     
     with open(output_path, 'w') as f:
         for y in y_pred:
-            if y[0] > 0.5:
+            max_prob = -1
+            max_k = -1
+            for j in range(6):
+                if y[j] > max_prob:
+                    max_prob = y[j].item()
+                    max_k = j
+            if max_k < 3:
                 f.write('true\t')
             else:
                 f.write('false\t')
-            f.write(str(y[0].item()) + '\n')
+            f.write(max_k / 5.0 + '\n')
 
 
 def sentiment_parser():

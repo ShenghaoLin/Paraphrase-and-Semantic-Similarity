@@ -28,7 +28,13 @@ def accuracy(x0, x1, y, model):
     good = 0
     for i in range(len(y)):
         tot += 1
-        if (y[i][0] > 0.5 and y_pred[i][0] > 0.5) or (y[i][0].item() < 0.5 and y_pred[i][0].item() < 0.5):
+        max_prob = -1
+        max_k = 0
+        for j in range(6):
+            if y_pred[i][j] > max_prob:
+                max_prob = y_pred[i][j].item()
+                max_k = j
+        if (y[i].item() == max_k):
             good += 1
     return good / tot
 
@@ -45,7 +51,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
         with open(TRANING_VALIDATION_DATA, 'wb') as f:
             pickle.dump((x0, x1, y, x0_val, x1_val, y_val), f)
     if pretrained_model is None:
-        model = RNN_model(768, 200, 1, skip_connection=skip_connection)
+        model = RNN_model(768, 768, 6, skip_connection=skip_connection)
     else:
         model = pretrained_model
 
@@ -56,7 +62,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
     y = y.to(device)
     max_a = 0
     # stopping_sign = 0
-    criterion = torch.nn.MSELoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
     for t in range(starting_t, num_epochs):
@@ -73,6 +79,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
         y_pred = model(x0, x1)
             # print(y_pred.size)
         loss = criterion(y_pred, y)
+        print(loss)
 
         loss.backward()
         optimizer.step()
@@ -83,7 +90,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
               ' | validation accuracy:  ' + 
               str(a))
         
-        if t % 50 == 0:
+        if t % 5 == 0:
             torch.save(model, MODEL_SAVE_PATH + str(t) + '.torch')
         if a > max_a:
             max_a = a
