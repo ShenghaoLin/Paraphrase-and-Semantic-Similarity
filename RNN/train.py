@@ -28,7 +28,13 @@ def accuracy(x0, x1, y, model):
     good = 0
     for i in range(len(y)):
         tot += 1
-        if (y[i][0] == 1 and y_pred[i][0] > y_pred[i][1]) or (y[i][1] == 1 and y_pred[i][0] < y_pred[i][1]):
+        max_prob = -1
+        max_k = 0
+        for j in range(6):
+            if y_pred[i][j] > max_prob:
+                max_prob = y_pred[i][j].item()
+                max_k = j
+        if (y[i].item() == max_k):
             good += 1
     return good / tot
 
@@ -38,14 +44,14 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
           starting_t=0, skip_connection=False):
     try:
         with open(TRANING_VALIDATION_DATA, 'rb') as f:
-            x0, x1, y, x0_val, x1_val, y_val, embedding = pickle.load(f)
+            x0, x1, y, x0_val, x1_val, y_val = pickle.load(f)
     except:
-        x0, x1, y, embedding = preprocessing(embedding_path, input_path)
-        x0_val, x1_val, y_val, embedding = preprocessing(embedding_path, validation_path)
+        x0, x1, y = preprocessing(embedding_path, input_path)
+        x0_val, x1_val, y_val = preprocessing(embedding_path, validation_path)
         with open(TRANING_VALIDATION_DATA, 'wb') as f:
-            pickle.dump((x0, x1, y, x0_val, x1_val, y_val, embedding), f)
+            pickle.dump((x0, x1, y, x0_val, x1_val, y_val), f)
     if pretrained_model is None:
-        model = RNN_model(embedding.weight.shape[1], 200, 2, skip_connection=skip_connection)
+        model = RNN_model(768, 768, 6, skip_connection=skip_connection)
     else:
         model = pretrained_model
 
@@ -56,23 +62,24 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
     y = y.to(device)
     max_a = 0
     # stopping_sign = 0
-    criterion = torch.nn.MSELoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
     for t in range(starting_t, num_epochs):
-        permutation = torch.randperm(x0.shape[0])
+#        permutation = torch.randperm(x0.shape[0])
 
-        #for i in range(0, x0.shape[0], batch_size):
+ #       for i in range(0, x0.shape[0], batch_size):
         optimizer.zero_grad()
 
         #    indices = permutation[i:i + batch_size]
-        #    if len(indices) < batch_size:
-        #        continue
+         #   if len(indices) < batch_size:
+          #      continue
 
-        #    batch_x0, batch_x1, batch_y = x0[indices], x0[indices], y[indices]
+           # batch_x0, batch_x1, batch_y = x0[indices], x0[indices], y[indices]
         y_pred = model(x0, x1)
             # print(y_pred.size)
         loss = criterion(y_pred, y)
+        print(loss)
 
         loss.backward()
         optimizer.step()
@@ -83,7 +90,7 @@ def train(embedding_path, input_path, validation_path, dropout_rate=0,
               ' | validation accuracy:  ' + 
               str(a))
         
-        if t % 50 == 0:
+        if t % 5 == 0:
             torch.save(model, MODEL_SAVE_PATH + str(t) + '.torch')
         if a > max_a:
             max_a = a
